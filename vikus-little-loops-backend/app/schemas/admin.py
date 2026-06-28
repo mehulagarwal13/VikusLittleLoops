@@ -25,7 +25,13 @@ class OrderOut(BaseModel):
     shipping_amount: Decimal
     total: Decimal
     ship_name: str | None = None
+    ship_email: str | None = None
+    ship_phone: str | None = None
+    ship_address: str | None = None
     ship_city: str | None = None
+    ship_state: str | None = None
+    ship_pincode: str | None = None
+    notes: str | None = None
     created_at: datetime
     items: list[OrderItemOut] = []
 

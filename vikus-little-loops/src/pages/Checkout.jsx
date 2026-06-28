@@ -25,7 +25,7 @@ const schema = z.object({
 
 export default function Checkout() {
   const { items, subtotal, clear } = useCart();
-  const { customer } = useCustomerAuth();
+  const { customer, loading: authLoading } = useCustomerAuth();
   const navigate = useNavigate();
   const [placed, setPlaced] = useState(null);
   const [error, setError] = useState("");
@@ -57,6 +57,13 @@ export default function Checkout() {
     );
   }
 
+  if (authLoading)
+    return (
+      <main className="grid min-h-[60vh] place-items-center pt-36">
+        <span className="h-12 w-12 animate-spin rounded-full border-2 border-blush-300 border-t-blush-500" />
+      </main>
+    );
+
   if (items.length === 0)
     return (
       <main className="container-lux grid min-h-[60vh] place-items-center pt-36 text-center">
@@ -65,6 +72,38 @@ export default function Checkout() {
           <h1 className="heading-display mt-5 text-3xl">Nothing to check out yet</h1>
           <div className="mt-6"><Button to="/shop">Browse the Boutique</Button></div>
         </div>
+      </main>
+    );
+
+  // Require an account before checkout.
+  if (!customer)
+    return (
+      <main className="container-lux grid min-h-[60vh] place-items-center pt-36 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-md rounded-xl3 border border-blush-200/50 bg-ivory/80 p-10 shadow-soft"
+        >
+          <p className="text-6xl">🔐</p>
+          <h1 className="heading-display mt-5 text-3xl">Please sign in to checkout</h1>
+          <p className="mt-3 font-serif text-lg text-ink-soft">
+            Create an account or log in so we can save your order and let you track it anytime.
+          </p>
+          <div className="mt-7 flex flex-col items-center gap-3">
+            <Button
+              to="/login"
+              state={{ from: { pathname: "/checkout" } }}
+              className="w-full justify-center"
+            >
+              Login / Create Account
+            </Button>
+            <Link to="/cart" className="text-sm text-ink-soft hover:text-blush-600">
+              ← Back to cart
+            </Link>
+          </div>
+          <p className="mt-5 text-xs text-warmgray">Your {items.length} item{items.length > 1 ? "s" : ""} will be waiting in your cart.</p>
+        </motion.div>
       </main>
     );
 
