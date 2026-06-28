@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FiGrid, FiBox, FiTag, FiLayers, FiGift, FiHeart, FiShoppingBag,
-  FiUsers, FiLogOut, FiMenu, FiX, FiExternalLink,
+  FiUsers, FiStar, FiLogOut, FiMenu, FiX, FiExternalLink,
 } from "react-icons/fi";
 import { useAuth } from "@/admin/context/AuthContext";
 
@@ -13,6 +13,7 @@ const nav = [
   { to: "/admin/collections", label: "Collections", icon: FiLayers },
   { to: "/admin/orders", label: "Orders", icon: FiShoppingBag },
   { to: "/admin/custom-orders", label: "Custom Orders", icon: FiHeart },
+  { to: "/admin/reviews", label: "Reviews", icon: FiStar },
   { to: "/admin/coupons", label: "Coupons", icon: FiGift },
   { to: "/admin/customers", label: "Customers", icon: FiUsers },
 ];

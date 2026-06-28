@@ -190,6 +190,8 @@ class ProductUpdate(BaseModel):
     meta_title: str | None = None
     meta_description: str | None = None
     alt_text: str | None = None
+    # When provided on update, replaces the full image set.
+    images: list[ProductImageIn] | None = None
 
 
 class ProductOut(ProductBase):

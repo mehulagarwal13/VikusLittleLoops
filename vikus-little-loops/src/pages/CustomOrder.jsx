@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
 import { fadeUp, stagger, reveal } from "@/lib/motion";
+import { api } from "@/lib/api";
 
 const schema = z.object({
   name: z.string().min(2, "Please enter your name"),
@@ -38,7 +39,11 @@ export default function CustomOrder() {
       <motion.form
         variants={stagger}
         {...reveal}
-        onSubmit={handleSubmit((d) => { console.log("custom order", d); reset(); })}
+        onSubmit={handleSubmit(async (d) => {
+          const { date, ...rest } = d;
+          await api.post("/custom-orders", { ...rest, delivery_date: date || null });
+          reset();
+        })}
         noValidate
         className="mx-auto mt-14 max-w-3xl rounded-xl3 border border-blush-200/50 bg-ivory/80 p-8 shadow-soft md:p-12"
       >

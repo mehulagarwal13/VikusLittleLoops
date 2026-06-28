@@ -11,8 +11,14 @@ import Product from "@/pages/Product";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import CustomOrder from "@/pages/CustomOrder";
+import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import Wishlist from "@/pages/Wishlist";
+import Login from "@/pages/Login";
+import Account from "@/pages/Account";
 import NotFound from "@/pages/NotFound";
 import AdminApp from "@/admin/AdminApp";
+import CartDrawer from "@/components/cart/CartDrawer";
 
 // Reset scroll on every route change.
 function ScrollToTop() {
@@ -53,8 +59,11 @@ function AnimatedRoutes() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/custom-order" element={<CustomOrder />} />
-          <Route path="/cart" element={<ComingSoon title="Your Cart" emoji="🛍️" />} />
-          <Route path="/wishlist" element={<ComingSoon title="Your Wishlist" emoji="💝" />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/account" element={<Account />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
@@ -81,6 +90,7 @@ export default function App() {
       <AnimatedRoutes />
       <Footer />
       <ScrollWidgets />
+      <CartDrawer />
     </>
   );
 }

@@ -88,13 +88,21 @@ export default function ProductForm() {
       collection_id: form.collection_id ? Number(form.collection_id) : null,
       tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     };
+    // Normalize images to the API shape (strip server-only fields like id).
+    const cleanImages = images.map((im, i) => ({
+      url: im.url,
+      public_id: im.public_id || null,
+      alt_text: im.alt_text || null,
+      is_primary: !!im.is_primary,
+      sort_order: i,
+    }));
     try {
       if (editing) {
-        delete payload.images;
         delete payload.variants;
+        payload.images = cleanImages; // replaces the full image set
         await updateProduct(editId, payload);
       } else {
-        payload.images = images.map((im, i) => ({ ...im, sort_order: i }));
+        payload.images = cleanImages;
         await createProduct(payload);
       }
       navigate("/admin/products");
@@ -143,7 +151,7 @@ export default function ProductForm() {
 
           {/* Images */}
           <Panel>
-            <label className={lbl}>Images {editing && "(uploads apply on create; edit keeps existing)"}</label>
+            <label className={lbl}>Images</label>
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); handleFiles([...e.dataTransfer.files]); }}

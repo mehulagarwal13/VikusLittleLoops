@@ -9,8 +9,10 @@ from app.core.database import get_db
 from app.models.admin import Admin
 from app.models.catalog import Category, Product
 from app.models.commerce import CustomOrder, Customer, Order, OrderItem
+from app.models.content import Review
 from app.schemas.admin import CustomerOut, OrderOut, StatusUpdate
 from app.schemas.catalog import ProductListOut
+from app.schemas.misc import ReviewOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -116,6 +118,34 @@ def update_order_status(
 @router.get("/customers", response_model=list[CustomerOut])
 def admin_customers(db: Session = Depends(get_db), _: Admin = Depends(get_current_admin)):
     return db.scalars(select(Customer).order_by(Customer.created_at.desc())).all()
+
+
+# ---------------- Reviews moderation ----------------
+@router.get("/reviews", response_model=list[ReviewOut])
+def admin_reviews(db: Session = Depends(get_db), _: Admin = Depends(get_current_admin)):
+    return db.scalars(select(Review).order_by(Review.created_at.desc())).all()
+
+
+@router.patch("/reviews/{review_id}/approve", response_model=ReviewOut)
+def approve_review(
+    review_id: int, db: Session = Depends(get_db), _: Admin = Depends(get_current_admin)
+):
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review.is_approved = not review.is_approved
+    db.commit()
+    db.refresh(review)
+    return review
+
+
+@router.delete("/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(review_id: int, db: Session = Depends(get_db), _: Admin = Depends(get_current_admin)):
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    db.delete(review)
+    db.commit()
 
 
 # ---------------- Custom order status ----------------

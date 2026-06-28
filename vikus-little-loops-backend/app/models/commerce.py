@@ -27,6 +27,8 @@ class Customer(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(32))
+    google_id: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     orders: Mapped[list["Order"]] = relationship(back_populates="customer")
@@ -104,6 +106,7 @@ class Order(Base, TimestampMixin):
 
     # Shipping snapshot
     ship_name: Mapped[str | None] = mapped_column(String(120))
+    ship_email: Mapped[str | None] = mapped_column(String(255), index=True)
     ship_phone: Mapped[str | None] = mapped_column(String(32))
     ship_address: Mapped[str | None] = mapped_column(Text)
     ship_city: Mapped[str | None] = mapped_column(String(80))

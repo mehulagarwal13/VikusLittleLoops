@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
 
+    # Google OAuth (customer sign-in)
+    GOOGLE_CLIENT_ID: str = ""
+
     # First admin (seed)
     FIRST_ADMIN_EMAIL: str = "admin@vikuslittleloops.com"
     FIRST_ADMIN_PASSWORD: str = "ChangeMe123!"

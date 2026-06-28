@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiShoppingBag, FiHeart, FiMenu, FiX } from "react-icons/fi";
+import { FiShoppingBag, FiHeart, FiMenu, FiX, FiUser } from "react-icons/fi";
+import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
+import { useCustomerAuth } from "@/context/CustomerAuthContext";
 
 const links = [
   { to: "/shop", label: "Shop" },
@@ -14,6 +17,9 @@ const links = [
 export default function Navbar() {
   const [solid, setSolid] = useState(false);
   const [open, setOpen] = useState(false);
+  const { count, setOpen: setCartOpen } = useCart();
+  const { count: wishCount } = useWishlist();
+  const { isAuthed } = useCustomerAuth();
 
   useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 60);
@@ -58,15 +64,25 @@ export default function Navbar() {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
-          <Link to="/wishlist" aria-label="Wishlist" className="hidden text-ink-soft transition-colors hover:text-blush-600 sm:block">
+          <Link to={isAuthed ? "/account" : "/login"} aria-label="Account" className="text-ink-soft transition-colors hover:text-blush-600">
+            <FiUser size={20} />
+          </Link>
+          <Link to="/wishlist" aria-label="Wishlist" className="relative hidden text-ink-soft transition-colors hover:text-blush-600 sm:block">
             <FiHeart size={20} />
+            {wishCount > 0 && (
+              <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-blush-500 text-[0.6rem] text-white">
+                {wishCount}
+              </span>
+            )}
           </Link>
-          <Link to="/cart" aria-label="Cart" className="relative text-ink-soft transition-colors hover:text-blush-600">
+          <button onClick={() => setCartOpen(true)} aria-label="Cart" className="relative text-ink-soft transition-colors hover:text-blush-600">
             <FiShoppingBag size={20} />
-            <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-blush-500 text-[0.6rem] text-white">
-              0
-            </span>
-          </Link>
+            {count > 0 && (
+              <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-blush-500 text-[0.6rem] text-white">
+                {count}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setOpen(true)}
             aria-label="Menu"

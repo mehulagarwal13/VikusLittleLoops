@@ -22,6 +22,11 @@ export const createCollection = (payload) => api.post("/collections", payload).t
 // ---- Coupons ----
 export const createCoupon = (payload) => api.post("/coupons", payload).then((r) => r.data);
 
+// ---- Reviews ----
+export const getReviews = () => api.get("/admin/reviews").then((r) => r.data);
+export const approveReview = (id) => api.patch(`/admin/reviews/${id}/approve`).then((r) => r.data);
+export const deleteReview = (id) => api.delete(`/admin/reviews/${id}`).then((r) => r.data);
+
 // ---- Custom orders ----
 export const getCustomOrders = () => api.get("/custom-orders").then((r) => r.data);
 export const setCustomOrderStatus = (id, status) =>

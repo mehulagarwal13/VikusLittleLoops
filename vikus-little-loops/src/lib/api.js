@@ -7,9 +7,21 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach JWT (admin/customer) when present.
+// Attach the admin JWT when present (used by the admin panel + public reads).
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("vll_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Separate instance for the storefront customer — uses the customer token.
+export const customerApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
+  headers: { "Content-Type": "application/json" },
+});
+
+customerApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem("vll_customer_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

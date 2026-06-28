@@ -11,6 +11,7 @@ import Coupons from "@/admin/pages/Coupons";
 import CustomOrders from "@/admin/pages/CustomOrders";
 import Orders from "@/admin/pages/Orders";
 import Customers from "@/admin/pages/Customers";
+import Reviews from "@/admin/pages/Reviews";
 
 function Shell({ children }) {
   return (
@@ -32,6 +33,7 @@ export default function AdminApp() {
       <Route path="collections" element={<Shell><Collections /></Shell>} />
       <Route path="coupons" element={<Shell><Coupons /></Shell>} />
       <Route path="custom-orders" element={<Shell><CustomOrders /></Shell>} />
+      <Route path="reviews" element={<Shell><Reviews /></Shell>} />
       <Route path="orders" element={<Shell><Orders /></Shell>} />
       <Route path="customers" element={<Shell><Customers /></Shell>} />
     </Routes>

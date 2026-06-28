@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
 import { scaleIn, reveal } from "@/lib/motion";
+import { api } from "@/lib/api";
 
 const schema = z.object({ email: z.string().email("Please enter a valid email") });
 
@@ -15,9 +16,12 @@ export default function Newsletter() {
     formState: { errors, isSubmitSuccessful },
   } = useForm({ resolver: zodResolver(schema) });
 
-  const onSubmit = (data) => {
-    // TODO: POST to /api/newsletter
-    console.log("subscribe", data);
+  const onSubmit = async (data) => {
+    try {
+      await api.post("/newsletter", data);
+    } catch {
+      /* swallow — still show friendly confirmation */
+    }
     reset();
   };
 

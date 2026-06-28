@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.api.deps import get_optional_customer
 from app.core.database import get_db
 from app.models.catalog import Product
-from app.models.commerce import Coupon, Order, OrderItem
+from app.models.commerce import Coupon, Customer, Order, OrderItem
 from app.schemas.order import CheckoutRequest, OrderPublic
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -21,7 +22,11 @@ def _order_number() -> str:
 
 
 @router.post("", response_model=OrderPublic, status_code=status.HTTP_201_CREATED)
-def create_order(payload: CheckoutRequest, db: Session = Depends(get_db)):
+def create_order(
+    payload: CheckoutRequest,
+    db: Session = Depends(get_db),
+    customer: Customer | None = Depends(get_optional_customer),
+):
     if not payload.items:
         raise HTTPException(status_code=422, detail="Cart is empty")
 
@@ -70,7 +75,9 @@ def create_order(payload: CheckoutRequest, db: Session = Depends(get_db)):
         shipping_amount=SHIPPING_FLAT,
         total=total,
         coupon_id=coupon_obj.id if coupon_obj else None,
+        customer_id=customer.id if customer else None,
         ship_name=payload.name,
+        ship_email=payload.email,
         ship_phone=payload.phone,
         ship_address=payload.address,
         ship_city=payload.city,

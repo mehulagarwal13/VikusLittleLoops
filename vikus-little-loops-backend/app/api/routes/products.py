@@ -132,8 +132,21 @@ def update_product(
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    data = payload.model_dump(exclude_unset=True)
+    new_images = data.pop("images", None)
+    for field, value in data.items():
         setattr(product, field, value)
+
+    # Replace the full image set when provided.
+    if new_images is not None:
+        for img in list(product.images):
+            db.delete(img)
+        db.flush()
+        for i, img in enumerate(new_images):
+            payload_img = {**img, "sort_order": img.get("sort_order", i)}
+            db.add(ProductImage(product_id=product.id, **payload_img))
+
     db.commit()
     product = db.scalar(select(Product).options(*_loaders).where(Product.id == product_id))
     return product
