@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { FaInstagram, FaWhatsapp, FaEnvelope } from "react-icons/fa";
 import { useCategories, useHomepage } from "@/lib/hooks";
 
-const helpCol = { title: "Help", links: [["Shipping", "/contact"], ["Returns", "/contact"], ["FAQ", "/contact"], ["Custom Orders", "/custom-order"]] };
+const helpCol = { title: "Help", links: [["Shipping", "/contact"], ["FAQ", "/contact"], ["Custom Orders", "/custom-order"]] };
 const brandCol = { title: "Brand", links: [["The Maker", "/about"], ["Contact", "/contact"]] };
 
 export default function Footer() {

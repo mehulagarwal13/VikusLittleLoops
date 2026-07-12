@@ -96,8 +96,8 @@ export default function Shop() {
         </div>
       ) : products.length === 0 ? (
         <div className="py-24 text-center">
-          <p className="text-6xl">🧺</p>
-          <p className="mt-4 font-serif text-2xl text-ink-soft">No little loops found here yet.</p>
+          <p className="text-2xl tracking-widest text-blush-400">. ݁₊ ⊹ . ݁ ⟡ ݁ . ⊹ ₊ ݁.</p>
+          <p className="mt-4 font-serif text-2xl text-ink-soft">Still weaving the magic — check back soon 🧶</p>
         </div>
       ) : (
         <motion.div

@@ -150,7 +150,7 @@ def create_review_as_admin(
     """Admin-created review — approved immediately, shows on the storefront."""
     if not (1 <= payload.rating <= 5):
         raise HTTPException(status_code=422, detail="Rating must be 1–5")
-    if not db.get(Product, payload.product_id):
+    if payload.product_id is not None and not db.get(Product, payload.product_id):
         raise HTTPException(status_code=404, detail="Product not found")
     obj = Review(**payload.model_dump(), is_approved=True)
     db.add(obj)

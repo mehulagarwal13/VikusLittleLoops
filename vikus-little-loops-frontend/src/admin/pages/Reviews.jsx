@@ -36,7 +36,7 @@ export default function Reviews() {
     onSuccess: () => { setForm(EMPTY); setShowForm(false); refresh(); },
   });
 
-  const canSubmit = form.product_id && form.author_name.trim() && form.body.trim();
+  const canSubmit = form.author_name.trim() && form.body.trim();
 
   return (
     <>
@@ -55,13 +55,13 @@ export default function Reviews() {
           <h3 className="mb-4 font-display text-lg text-white">New Review</h3>
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
-              <label className={lbl}>Product</label>
+              <label className={lbl}>Product (optional)</label>
               <select
                 className={inp}
                 value={form.product_id}
                 onChange={(e) => setForm({ ...form, product_id: e.target.value })}
               >
-                <option value="">Select a product…</option>
+                <option value="">General review (whole shop)</option>
                 {(products?.items || products || []).map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -117,7 +117,7 @@ export default function Reviews() {
           <div className="mt-4 flex items-center gap-3">
             <button
               disabled={!canSubmit || create.isPending}
-              onClick={() => create.mutate({ ...form, product_id: Number(form.product_id), title: form.title || null, photo_url: form.photo_url || null })}
+              onClick={() => create.mutate({ ...form, product_id: form.product_id ? Number(form.product_id) : null, title: form.title || null, photo_url: form.photo_url || null })}
               className="rounded-xl bg-gradient-to-br from-blush-400 to-blush-600 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               {create.isPending ? "Adding…" : "Add & Publish"}

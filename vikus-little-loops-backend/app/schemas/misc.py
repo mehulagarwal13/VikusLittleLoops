@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 
 # ---------- Reviews ----------
 class ReviewCreate(BaseModel):
-    product_id: int
+    product_id: int | None = None
     author_name: str
     rating: int
     title: str | None = None
@@ -19,7 +19,7 @@ class ReviewCreate(BaseModel):
 class ReviewOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    product_id: int
+    product_id: int | None = None
     author_name: str
     rating: int
     title: str | None = None

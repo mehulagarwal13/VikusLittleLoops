@@ -11,7 +11,9 @@ class Review(Base, TimestampMixin):
     __tablename__ = "reviews"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
+    product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=True
+    )  # null = general review (not tied to a product)
     customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id", ondelete="SET NULL"))
     author_name: Mapped[str] = mapped_column(String(120), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1..5
@@ -20,7 +22,7 @@ class Review(Base, TimestampMixin):
     photo_url: Mapped[str | None] = mapped_column(String(500))
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    product: Mapped["Product"] = relationship(back_populates="reviews")  # type: ignore[name-defined]  # noqa: F821
+    product: Mapped["Product | None"] = relationship(back_populates="reviews")  # type: ignore[name-defined]  # noqa: F821
     customer: Mapped["Customer"] = relationship(back_populates="reviews")  # type: ignore[name-defined]  # noqa: F821
 
 
