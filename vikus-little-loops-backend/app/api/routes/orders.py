@@ -1,16 +1,25 @@
+import hashlib
+import hmac
 import secrets
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import razorpay
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_optional_customer
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.catalog import Product
 from app.models.commerce import Coupon, Customer, Order, OrderItem
-from app.schemas.order import CheckoutRequest, OrderPublic, PaymentRefIn
+from app.schemas.order import (
+    CheckoutRequest,
+    OrderPublic,
+    PaymentRefIn,
+    RazorpayVerifyIn,
+)
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -19,6 +28,12 @@ SHIPPING_FLAT = Decimal("0")  # free shipping (gift wrapping included)
 
 def _order_number() -> str:
     return "VLL-" + secrets.token_hex(3).upper()
+
+
+def _razorpay_client() -> razorpay.Client:
+    return razorpay.Client(
+        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+    )
 
 
 @router.post("", response_model=OrderPublic, status_code=status.HTTP_201_CREATED)
@@ -72,8 +87,25 @@ def create_order(
 
     total = subtotal - discount + SHIPPING_FLAT
 
+    # Create a Razorpay order (amount in paise = total * 100)
+    rzp_client = _razorpay_client()
+    amount_paise = int(total * 100)
+    order_number = _order_number()
+    try:
+        rzp_order = rzp_client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": order_number,
+            "notes": {
+                "customer_name": payload.name,
+                "customer_email": payload.email,
+            },
+        })
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Payment gateway error: {exc}") from exc
+
     order = Order(
-        order_number=_order_number(),
+        order_number=order_number,
         status="pending",
         payment_status="unpaid",
         subtotal=subtotal,
@@ -90,6 +122,7 @@ def create_order(
         ship_state=payload.state,
         ship_pincode=payload.pincode,
         notes=payload.notes,
+        razorpay_order_id=rzp_order["id"],
         items=order_items,
     )
     db.add(order)
@@ -98,6 +131,49 @@ def create_order(
     db.commit()
 
     order = db.scalar(select(Order).options(selectinload(Order.items)).where(Order.id == order.id))
+
+    # Attach the public key transiently so the frontend can open the widget.
+    result = OrderPublic.model_validate(order)
+    result.razorpay_key_id = settings.RAZORPAY_KEY_ID
+    return result
+
+
+@router.post("/{order_number}/payment/verify", response_model=OrderPublic)
+def verify_payment(
+    order_number: str,
+    payload: RazorpayVerifyIn,
+    db: Session = Depends(get_db),
+):
+    """Verify the Razorpay payment signature returned by the frontend widget.
+    On success marks the order as paid and confirmed."""
+    order = db.scalar(
+        select(Order).options(selectinload(Order.items)).where(Order.order_number == order_number)
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.payment_status == "paid":
+        return order  # idempotent
+
+    # HMAC-SHA256 signature check
+    msg = f"{payload.razorpay_order_id}|{payload.razorpay_payment_id}"
+    expected = hmac.new(
+        settings.RAZORPAY_KEY_SECRET.encode(),
+        msg.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected, payload.razorpay_signature):
+        raise HTTPException(status_code=400, detail="Payment verification failed — invalid signature")
+
+    order.payment_reference = payload.razorpay_payment_id
+    order.payment_status = "paid"
+    order.status = "confirmed"
+    db.commit()
+
+    order = db.scalar(
+        select(Order).options(selectinload(Order.items)).where(Order.id == order.id)
+    )
     return order
 
 
@@ -105,8 +181,8 @@ def create_order(
 def submit_payment_reference(
     order_number: str, payload: PaymentRefIn, db: Session = Depends(get_db)
 ):
-    """Customer submits their UPI transaction/UTR reference after paying.
-    Marks the order as 'verifying' until an admin confirms it."""
+    """Legacy: customer submits a UPI UTR reference manually.
+    Kept for admin/fallback use. Marks the order as 'verifying'."""
     order = db.scalar(select(Order).where(Order.order_number == order_number))
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")

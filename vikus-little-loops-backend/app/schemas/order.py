@@ -26,7 +26,15 @@ class CheckoutRequest(BaseModel):
 
 
 class PaymentRefIn(BaseModel):
+    """Legacy UTR reference fallback (kept for admin use)."""
     reference: str = Field(min_length=4, max_length=64)
+
+
+class RazorpayVerifyIn(BaseModel):
+    """Payload sent by the frontend after Razorpay checkout completes."""
+    razorpay_payment_id: str
+    razorpay_order_id: str
+    razorpay_signature: str
 
 
 class OrderItemPublic(BaseModel):
@@ -47,6 +55,9 @@ class OrderPublic(BaseModel):
     shipping_amount: Decimal
     total: Decimal
     payment_reference: str | None = None
+    razorpay_order_id: str | None = None
+    # These fields are populated transiently (not stored in DB) only on creation
+    razorpay_key_id: str | None = None
     ship_name: str | None = None
     created_at: datetime
     items: list[OrderItemPublic] = []

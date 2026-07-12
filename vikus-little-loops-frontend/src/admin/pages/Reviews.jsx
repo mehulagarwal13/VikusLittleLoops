@@ -122,7 +122,11 @@ export default function Reviews() {
             >
               {create.isPending ? "Adding…" : "Add & Publish"}
             </button>
-            {create.isError && <span className="text-sm text-red-300">Could not add — check the fields.</span>}
+            {create.isError && (
+              <span className="text-sm text-red-300">
+                Could not add — {create.error?.response?.data?.detail || `server error (${create.error?.response?.status || "network"})`}
+              </span>
+            )}
           </div>
         </Panel>
       )}

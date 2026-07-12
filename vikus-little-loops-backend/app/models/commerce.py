@@ -99,6 +99,7 @@ class Order(Base, TimestampMixin):
     payment_status: Mapped[str] = mapped_column(String(24), default="unpaid", nullable=False)
     # unpaid | verifying | paid | failed
     payment_reference: Mapped[str | None] = mapped_column(String(64))  # UPI UTR / txn id
+    razorpay_order_id: Mapped[str | None] = mapped_column(String(64), index=True)  # Razorpay order id
 
     subtotal: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     discount_amount: Mapped[float] = mapped_column(Numeric(10, 2), default=0, nullable=False)

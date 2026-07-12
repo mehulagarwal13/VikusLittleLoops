@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # Google OAuth (customer sign-in)
     GOOGLE_CLIENT_ID: str = ""
 
+    # Razorpay
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+
     # First admin (seed)
     FIRST_ADMIN_EMAIL: str = "admin@vikuslittleloops.com"
     FIRST_ADMIN_PASSWORD: str = "ChangeMe123!"

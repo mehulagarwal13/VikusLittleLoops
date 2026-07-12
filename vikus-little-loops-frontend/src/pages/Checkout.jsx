@@ -4,16 +4,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { FiCheckCircle } from "react-icons/fi";
+import { FiCheckCircle, FiShield, FiCreditCard } from "react-icons/fi";
 import Button from "@/components/ui/Button";
-import { FiCopy } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { useToast } from "@/context/ToastContext";
 import { inr } from "@/lib/format";
 import { customerApi } from "@/lib/api";
-import { UPI_ID, upiLink } from "@/lib/shopConfig";
-import UpiQR from "@/components/UpiQR";
 
 const schema = z.object({
   name: z.string().min(2, "Please enter your name"),
@@ -27,6 +24,32 @@ const schema = z.object({
   notes: z.string().optional(),
 });
 
+/**
+ * Opens the Razorpay checkout widget and returns a Promise that resolves
+ * with the payment response or rejects if the user closes/fails.
+ */
+function openRazorpay({ keyId, razorpayOrderId, amount, name, email, phone, orderNumber }) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      key: keyId,
+      amount,                     // in paise (already set server-side)
+      currency: "INR",
+      name: "Viku's Little Loops",
+      description: `Order ${orderNumber}`,
+      order_id: razorpayOrderId,
+      prefill: { name, email, contact: phone },
+      theme: { color: "#d97b8f" }, // blush-500
+      modal: {
+        ondismiss: () => reject(new Error("Payment window closed")),
+      },
+      handler: (response) => resolve(response),
+    };
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (resp) => reject(new Error(resp.error?.description || "Payment failed")));
+    rzp.open();
+  });
+}
+
 export default function Checkout() {
   const { items, subtotal, clear } = useCart();
   const { customer, loading: authLoading } = useCustomerAuth();
@@ -34,9 +57,6 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [placed, setPlaced] = useState(null);
   const [error, setError] = useState("");
-  const [payRef, setPayRef] = useState("");
-  const [refSubmitted, setRefSubmitted] = useState(false);
-  const [refBusy, setRefBusy] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -47,96 +67,29 @@ export default function Checkout() {
     },
   });
 
+  // ── Success screen ──────────────────────────────────────────────────────────
   if (placed) {
-    const copyUpi = async () => {
-      try {
-        await navigator.clipboard.writeText(UPI_ID);
-        toast("UPI ID copied 🌸");
-      } catch {
-        toast("Couldn't copy — please copy manually", "info");
-      }
-    };
-
-    const submitRef = async () => {
-      if (payRef.trim().length < 4) return;
-      setRefBusy(true);
-      try {
-        await customerApi.post(`/orders/${placed.order_number}/payment`, { reference: payRef.trim() });
-        setRefSubmitted(true);
-        toast("Payment details received — we'll verify & confirm 🌸");
-      } catch {
-        toast("Couldn't submit, please try again", "info");
-      } finally {
-        setRefBusy(false);
-      }
-    };
-
     return (
       <main className="container-lux grid min-h-[70vh] place-items-center pt-36 pb-16 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <FiCheckCircle className="mx-auto text-olive" size={64} />
-          <h1 className="heading-display mt-5 text-4xl">Order placed! 🌷</h1>
+          <h1 className="heading-display mt-5 text-4xl">Payment Confirmed! 🌷</h1>
           <p className="mt-3 font-serif text-xl text-ink-soft">
-            Order <b className="text-blush-700">{placed.order_number}</b> — pending payment.
+            Order <b className="text-blush-700">{placed.order_number}</b> is confirmed &amp; being crafted with love.
           </p>
 
-          {refSubmitted ? (
-            <div className="mt-7 rounded-xl3 border border-blush-200/50 bg-ivory/80 p-8 text-center shadow-soft">
-              <p className="text-5xl">💗</p>
-              <h2 className="heading-display mt-3 text-2xl">Payment under verification</h2>
-              <p className="mt-2 font-serif text-base text-ink-soft">
-                Thank you! We'll verify your payment and confirm your order shortly.
-                You can track it in your account.
-              </p>
+          <div className="mt-7 rounded-xl3 border border-blush-200/50 bg-ivory/80 p-8 text-center shadow-soft">
+            <p className="text-5xl">💗</p>
+            <h2 className="heading-display mt-3 text-2xl">Thank you for your order!</h2>
+            <p className="mt-2 font-serif text-base text-ink-soft">
+              Your payment has been verified. We'll start crafting your order right away.
+              You can track it anytime from your account.
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-2 text-sm text-olive-deep">
+              <FiShield size={16} />
+              <span>Secured by Razorpay</span>
             </div>
-          ) : (
-            <div className="mt-7 rounded-xl3 border border-blush-200/50 bg-ivory/80 p-7 text-left shadow-soft">
-              <p className="text-center font-display text-lg">Pay via UPI to confirm</p>
-              <p className="mt-1 text-center font-serif text-base text-ink-soft">
-                Step 1 — scan the QR (or use the UPI ID) to pay <b className="text-ink">{inr(placed.total)}</b>.
-              </p>
-
-              <div className="mt-5">
-                <UpiQR amount={placed.total} note={placed.order_number} />
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-blush-200/60 bg-white/70 px-4 py-3">
-                <div>
-                  <p className="text-[0.66rem] uppercase tracking-wide text-warmgray">UPI ID</p>
-                  <p className="font-medium">{UPI_ID}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={copyUpi} className="flex items-center gap-1.5 rounded-full border border-blush-300/60 px-3 py-2 text-xs text-ink-soft hover:text-blush-600">
-                    <FiCopy size={14} /> Copy
-                  </button>
-                  <a href={upiLink({ amount: placed.total, note: placed.order_number })} className="rounded-full border border-blush-300/60 px-3 py-2 text-xs text-ink-soft hover:text-blush-600">
-                    Open UPI app
-                  </a>
-                </div>
-              </div>
-
-              {/* Step 2 — submit reference */}
-              <p className="mt-6 text-center font-serif text-base text-ink-soft">
-                Step 2 — after paying, enter your <b className="text-ink">UPI reference / UTR number</b> so we can verify it.
-              </p>
-              <input
-                value={payRef}
-                onChange={(e) => setPayRef(e.target.value)}
-                placeholder="e.g. 12-digit UTR number"
-                className="mt-3 w-full rounded-2xl border border-blush-300/50 bg-white/80 px-5 py-3.5 text-sm outline-none transition-shadow focus:border-blush-500 focus:shadow-glow"
-              />
-              <button
-                onClick={submitRef}
-                disabled={refBusy || payRef.trim().length < 4}
-                className="mt-3 w-full rounded-full bg-gradient-to-br from-blush-400 to-blush-600 py-3.5 text-sm uppercase tracking-[0.12em] text-white transition hover:shadow-lift disabled:opacity-50"
-              >
-                {refBusy ? "Submitting…" : "I've Paid — Submit for Verification"}
-              </button>
-              <p className="mt-3 text-center text-xs text-warmgray">
-                Your order is confirmed once we verify the payment. You can also submit this later from your account.
-              </p>
-            </div>
-          )}
+          </div>
 
           <div className="mt-7"><Button to="/account">View My Orders</Button></div>
         </motion.div>
@@ -144,6 +97,7 @@ export default function Checkout() {
     );
   }
 
+  // ── Loading / empty / guest guards ─────────────────────────────────────────
   if (authLoading)
     return (
       <main className="grid min-h-[60vh] place-items-center pt-36">
@@ -162,7 +116,6 @@ export default function Checkout() {
       </main>
     );
 
-  // Require an account before checkout.
   if (!customer)
     return (
       <main className="container-lux grid min-h-[60vh] place-items-center pt-36 text-center">
@@ -194,19 +147,62 @@ export default function Checkout() {
       </main>
     );
 
+  // ── Main submit handler ─────────────────────────────────────────────────────
   const onSubmit = async (form) => {
     setError("");
+    let order;
+
+    // 1️⃣ Create the order on the backend (also creates a Razorpay order).
     try {
       const payload = {
         ...form,
         items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
       };
       const { data } = await customerApi.post("/orders", payload);
-      clear();
-      setPlaced(data);
+      order = data;
     } catch (e) {
       setError(e?.response?.data?.detail || "Could not place order. Please try again.");
+      return;
     }
+
+    // 2️⃣ Open the Razorpay widget.
+    let paymentResponse;
+    try {
+      paymentResponse = await openRazorpay({
+        keyId: order.razorpay_key_id || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        razorpayOrderId: order.razorpay_order_id,
+        amount: Math.round(parseFloat(order.total) * 100),
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        orderNumber: order.order_number,
+      });
+    } catch (e) {
+      // User closed the modal or payment failed — order is already created
+      // but unpaid. Let them know and don't clear the cart.
+      setError(
+        e?.message === "Payment window closed"
+          ? "Payment cancelled. Your order is saved — you can complete payment from your account."
+          : `Payment failed: ${e?.message || "please try again."}`
+      );
+      return;
+    }
+
+    // 3️⃣ Verify the payment signature server-side.
+    try {
+      await customerApi.post(`/orders/${order.order_number}/payment/verify`, {
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+      });
+    } catch (e) {
+      setError("Payment was made but verification failed. Please contact us with your payment ID: " + paymentResponse.razorpay_payment_id);
+      return;
+    }
+
+    // 4️⃣ All good — clear cart and show success.
+    clear();
+    setPlaced(order);
   };
 
   const field = "w-full rounded-2xl border border-blush-300/50 bg-white/80 px-5 py-3.5 text-sm outline-none transition-shadow focus:border-blush-500 focus:shadow-glow";
@@ -232,18 +228,28 @@ export default function Checkout() {
           <Field label="Coupon code (optional)"><input className={`${field} uppercase`} {...register("coupon_code")} /></Field>
           <Field label="Order notes (optional)"><textarea rows={2} className={field} {...register("notes")} /></Field>
 
-          {error && <p className="text-sm text-blush-700">{error}</p>}
+          {error && (
+            <div className="rounded-2xl border border-blush-200 bg-blush-50/60 px-5 py-4 text-sm text-blush-700">
+              {error}
+            </div>
+          )}
 
           <Button type="submit" size="lg" className={isSubmitting ? "pointer-events-none opacity-60" : ""}>
-            {isSubmitting ? "Placing order…" : "Place Order"}
+            {isSubmitting ? "Opening payment…" : "Place Order & Pay"}
           </Button>
-          <p className="text-xs text-ink-soft">
-            Pay securely via <b>Razorpay</b> (cards, UPI, netbanking &amp; wallets) — or UPI — with a
-            pay button shown right after you place your order. Confirmed once payment is received.
-          </p>
+
+          {/* Trust badges */}
+          <div className="flex items-center gap-3 rounded-2xl border border-blush-100 bg-white/60 px-5 py-3.5">
+            <FiShield className="shrink-0 text-olive-deep" size={20} />
+            <p className="text-xs text-ink-soft leading-relaxed">
+              Pay securely via <b className="text-ink">Razorpay</b> — cards, UPI, netbanking &amp; wallets accepted.
+              Your payment is 100% secure and encrypted.
+            </p>
+            <FiCreditCard className="shrink-0 text-blush-400" size={20} />
+          </div>
         </form>
 
-        {/* Summary */}
+        {/* Order Summary */}
         <div className="h-fit rounded-xl2 border border-blush-200/50 bg-ivory/80 p-7 shadow-soft">
           <h3 className="font-display text-xl">Your Order</h3>
           <div className="mt-5 space-y-4">
@@ -263,7 +269,7 @@ export default function Checkout() {
           <div className="mt-5 space-y-2 border-t border-blush-200/50 pt-5 text-ink-soft">
             <div className="flex justify-between"><span>Subtotal</span><span className="text-ink">{inr(subtotal)}</span></div>
             <div className="flex justify-between"><span>Shipping</span><span className="text-olive-deep">Free</span></div>
-            <div className="flex justify-between"><span>Payment</span><span className="text-ink">Razorpay / UPI</span></div>
+            <div className="flex justify-between"><span>Payment</span><span className="text-ink">Razorpay</span></div>
           </div>
           <div className="mt-4 flex justify-between border-t border-blush-200/50 pt-4 font-serif text-2xl font-semibold">
             <span>Total</span><span>{inr(subtotal)}</span>

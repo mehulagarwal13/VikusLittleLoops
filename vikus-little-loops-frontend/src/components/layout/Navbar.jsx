@@ -76,6 +76,13 @@ export default function Navbar() {
 
         {/* Icons */}
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* Quick links — visible on phones, hidden once the full menu appears */}
+          <NavLink to="/shop" className="text-[0.78rem] uppercase tracking-[0.08em] text-ink-soft transition-colors hover:text-blush-700 lg:hidden">
+            Shop
+          </NavLink>
+          <NavLink to="/about" className="text-[0.78rem] uppercase tracking-[0.08em] text-ink-soft transition-colors hover:text-blush-700 lg:hidden">
+            Story
+          </NavLink>
           <Link to={isAuthed ? "/account" : "/login"} aria-label="Account" className="flex h-11 w-11 items-center justify-center text-ink-soft transition-colors hover:text-blush-600">
             <FiUser size={20} />
           </Link>
