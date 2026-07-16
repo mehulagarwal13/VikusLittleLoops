@@ -112,7 +112,7 @@ export default function Product() {
             style={{ aspectRatio: "4/3" }}
           >
             {activeImageUrl ? (
-              <img src={activeImageUrl} alt={p.name} className="h-full w-full object-contain" />
+              <img src={activeImageUrl} alt={p.name} className="h-full w-full object-cover" />
             ) : (
               <span className="absolute inset-0 grid place-items-center text-[9rem]">{p.emoji}</span>
             )}
